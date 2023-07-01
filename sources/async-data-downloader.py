@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 ROOT_DIRECTORY = Path(os.path.dirname(os.path.abspath(__file__)))
-FILENAME_PATTERN = re.compile(r"\/([\d]{9}.[\w]+)")
+FILENAME_PATTERN = re.compile(r"(\d{9}.\w+)")
 URL_PATTERN = "https://storage.googleapis.com/lun-ua/images/{}".format
 
 

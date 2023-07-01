@@ -6,7 +6,7 @@ from PIL import Image
 from sources.classifier import Classifier
 
 
-FILENAME_PATTERN = re.compile(r"\/([\d]{9}.[\w]+)")
+FILENAME_PATTERN = re.compile(r"(\d{9}.\w+)")
 
 
 def classify_dataframe(dataframe: pd.DataFrame):
@@ -18,7 +18,7 @@ def classify_dataframe(dataframe: pd.DataFrame):
         for url in ["image_url1", "image_url2"]:
             image_url = row[url]
             image_path = FILENAME_PATTERN.search(image_url).group(1)
-            image_path = os.path.join("..", "data", "images", image_path)
+            image_path = os.path.join("..", "..", "data", "images", image_path)
             image = Image.open(image_path)
             score = classifier(image).argmax(-1).item()
             indexes.append(score)
@@ -33,9 +33,9 @@ def classify_dataframe(dataframe: pd.DataFrame):
 
 
 def test():
-    df = pd.read_csv("../data/train.csv")
+    df = pd.read_csv("../../data/train.csv")
     df = classify_dataframe(df.head(10))
-    print(df[["class_idx1", "class_idx2", "is_same"]])
+    print(df[["class_index1", "class_index1", "is_same"]])
 
 
 if __name__ == "__main__":

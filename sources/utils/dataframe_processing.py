@@ -18,6 +18,15 @@ def euclidean_distance(embedding1: np.ndarray, embedding2: np.ndarray):
     return distance
 
 
+def cosine_distance(embedding1: np.ndarray, embedding2: np.ndarray):
+    dot_product = np.dot(embedding1, embedding2.T)
+    normalised_embedding1 = np.linalg.norm(embedding1)
+    normalised_embedding2 = np.linalg.norm(embedding2)
+    similarity = dot_product / (normalised_embedding1 * normalised_embedding2)
+
+    return similarity[0][0]
+
+
 def process_dataframe(dataframe: pd.DataFrame):
     classifier = Classifier()
     class_indexes = []
@@ -39,14 +48,16 @@ def process_dataframe(dataframe: pd.DataFrame):
             embeddings.append(logits)
 
         euclidean_similarity = euclidean_distance(embeddings[0], embeddings[1])
+        cosine_similarity = cosine_distance(embeddings[0], embeddings[1])
 
         class_indexes.append(indexes)
-        similarities.append(euclidean_similarity)
+        similarities.append([euclidean_similarity, cosine_similarity])
 
     processed_dataframe = dataframe.copy()
     processed_dataframe.loc[:, "class_index1"] = [i[0] for i in class_indexes]
     processed_dataframe.loc[:, "class_index2"] = [i[1] for i in class_indexes]
-    processed_dataframe.loc[:, "euclidean_similarity"] = similarities
+    processed_dataframe.loc[:, "euclidean_similarity"] = [similarity[0] for similarity in similarities]
+    processed_dataframe.loc[:, "cosine_similarity"] = [similarity[1] for similarity in similarities]
 
     return processed_dataframe
 
@@ -54,7 +65,7 @@ def process_dataframe(dataframe: pd.DataFrame):
 def test():
     df = pd.read_csv("../../data/train.csv")
     df = process_dataframe(df.head(10))
-    print(df[["class_index1", "class_index1", "is_same", "euclidean_similarity"]])
+    print(df[["class_index1", "class_index1", "is_same", "euclidean_similarity", "cosine_similarity"]])
 
 
 if __name__ == "__main__":

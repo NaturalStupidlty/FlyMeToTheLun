@@ -24,7 +24,7 @@ async def download_by_url(session, url: str, file_name: str, save_to: Path):
             print(f"Error at url: {url}\nfile_name: {file_name}\n")
 
 
-def _get_filenames(dataframe):
+def _get_filenames(dataframe: pd.DataFrame):
     file_names = []
     for row in dataframe.iterrows():
         data = row[1]

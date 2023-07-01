@@ -5,6 +5,7 @@ import pandas as pd
 
 from PIL import Image
 from sources.classifier import Classifier
+from sources.utils.benchmarking import measure_time
 
 
 FILENAME_PATTERN = re.compile(r"(\d{9}.\w+)")
@@ -27,6 +28,7 @@ def cosine_distance(embedding1: np.ndarray, embedding2: np.ndarray):
     return similarity[0][0]
 
 
+@measure_time
 def process_dataframe(dataframe: pd.DataFrame):
     classifier = Classifier()
     class_indexes = []

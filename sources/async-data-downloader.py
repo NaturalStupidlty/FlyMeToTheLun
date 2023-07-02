@@ -1,15 +1,10 @@
 import os
-import re
 import pandas as pd
 import asyncio
 import aiohttp
 
 from pathlib import Path
-
-
-ROOT_DIRECTORY = Path(os.path.dirname(os.path.abspath(__file__)))
-FILENAME_PATTERN = re.compile(r"(\d{9}.\w+)")
-URL_PATTERN = "https://storage.googleapis.com/lun-ua/images/{}".format
+from sources.utils.url_utils import FILENAME_PATTERN, URL_PATTERN
 
 
 async def download_by_url(session, url: str, file_name: str, save_to: Path):

@@ -37,6 +37,9 @@ def find_missing_images(dataframe: pd.DataFrame) -> pd.DataFrame:
 
 
 def fill_images(dataframe: pd.DataFrame, augmentation: Augmentation, save_path: str) -> pd.DataFrame:
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
     missing_images_dataframe = find_missing_images(dataframe)
     print(missing_images_dataframe[["image_url1", "image_url2"]])
 
@@ -44,7 +47,7 @@ def fill_images(dataframe: pd.DataFrame, augmentation: Augmentation, save_path: 
     filled_dataframe["missing"] = False
 
     for index, row in filled_dataframe.iterrows():
-        if row.isin(missing_images_dataframe).any():
+        if index in missing_images_dataframe.index:
             image_path1 = get_image_path_from_url(row["image_url1"])
             image_path2 = get_image_path_from_url(row["image_url2"])
 
@@ -54,23 +57,21 @@ def fill_images(dataframe: pd.DataFrame, augmentation: Augmentation, save_path: 
                     image1 = augmentation(image1)
 
                     filename = FILENAME_PATTERN.search(row["image_url1"]).group(1)
-                    print("lmao1")
                     image1.save(os.path.join(save_path, filename))
 
-                    filled_dataframe.iloc[index, "is_same"] = True
+                    filled_dataframe.loc[index, "is_same"] = True
                 else:
-                    filled_dataframe.iloc[index, "missing"] = True
+                    filled_dataframe.loc[index, "missing"] = True
                     continue
 
             if not os.path.exists(image_path2):
-                print("lmao2")
                 image2 = Image.open(image_path1)
                 image2 = augmentation(image2)
 
                 filename = FILENAME_PATTERN.search(row["image_url2"]).group(1)
                 image2.save(os.path.join(save_path, filename))
 
-                filled_dataframe.iloc[index, "is_same"] = True
+                filled_dataframe.loc[index, "is_same"] = True
 
     return filled_dataframe
 
@@ -133,11 +134,10 @@ def main():
     # print(df[["class_index1", "class_index1", "is_same", "euclidean_similarity", "cosine_similarity"]])
     composition = a.Compose([
         a.Rotate(limit=10, p=0.9),
-        a.ColorJitter(p=0.9, brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
         a.Blur(p=0.8, blur_limit=10),
         a.GaussNoise(p=0.9, var_limit=(10.0, 100.0), mean=0, per_channel=True),
         a.ISONoise(p=0.9, color_shift=(0.01, 0.05), intensity=(0.1, 0.5)),
-        a.Downscale(p=0.9, scale_min=0.4, scale_max=0.4, interpolation=cv2.INTER_AREA),
+        a.Downscale(p=0.9, scale_min=0.1, scale_max=0.2, interpolation=cv2.INTER_AREA),
         a.ImageCompression(p=0.9, quality_lower=99, quality_upper=100),
     ])
     albumentations = AlbumentationTransform(composition)

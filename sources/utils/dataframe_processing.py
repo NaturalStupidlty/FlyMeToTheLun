@@ -1,14 +1,78 @@
 import os
 import re
+import cv2
 import numpy as np
 import pandas as pd
+import albumentations as a
 
 from PIL import Image
 from sources.classifier import Classifier
+from sources.utils.augmentation import Augmentation
+from sources.utils.albumentation_transform import AlbumentationTransform
 from sources.utils.benchmarking import measure_time
 
 
 FILENAME_PATTERN = re.compile(r"(\d{9}.\w+)")
+
+
+def get_image_path_from_url(url: str):
+    filename = FILENAME_PATTERN.search(url).group(1)
+    image_path = os.path.join("..", "..", "data", "images", filename)
+
+    return image_path
+
+
+def find_missing_images(dataframe: pd.DataFrame) -> pd.DataFrame:
+    missing_images = []
+
+    for index, row in dataframe.iterrows():
+        image_path1 = get_image_path_from_url(row["image_url1"])
+        image_path2 = get_image_path_from_url(row["image_url2"])
+
+        if not os.path.exists(image_path1) or not os.path.exists(image_path2):
+            missing_images.append(row)
+
+    missing_images_dataframe = pd.DataFrame(missing_images)
+    return missing_images_dataframe
+
+
+def fill_images(dataframe: pd.DataFrame, augmentation: Augmentation, save_path: str) -> pd.DataFrame:
+    missing_images_dataframe = find_missing_images(dataframe)
+    print(missing_images_dataframe[["image_url1", "image_url2"]])
+
+    filled_dataframe = dataframe.copy()
+    filled_dataframe["missing"] = False
+
+    for index, row in filled_dataframe.iterrows():
+        if row.isin(missing_images_dataframe).any():
+            image_path1 = get_image_path_from_url(row["image_url1"])
+            image_path2 = get_image_path_from_url(row["image_url2"])
+
+            if not os.path.exists(image_path1):
+                if os.path.exists(image_path2):
+                    image1 = Image.open(image_path2)
+                    image1 = augmentation(image1)
+
+                    filename = FILENAME_PATTERN.search(row["image_url1"]).group(1)
+                    print("lmao1")
+                    image1.save(os.path.join(save_path, filename))
+
+                    filled_dataframe.iloc[index, "is_same"] = True
+                else:
+                    filled_dataframe.iloc[index, "missing"] = True
+                    continue
+
+            if not os.path.exists(image_path2):
+                print("lmao2")
+                image2 = Image.open(image_path1)
+                image2 = augmentation(image2)
+
+                filename = FILENAME_PATTERN.search(row["image_url2"]).group(1)
+                image2.save(os.path.join(save_path, filename))
+
+                filled_dataframe.iloc[index, "is_same"] = True
+
+    return filled_dataframe
 
 
 def euclidean_distance(embedding1: np.ndarray, embedding2: np.ndarray):
@@ -29,18 +93,21 @@ def cosine_distance(embedding1: np.ndarray, embedding2: np.ndarray):
 
 
 @measure_time
-def process_dataframe(dataframe: pd.DataFrame):
+def add_features(dataframe: pd.DataFrame):
     classifier = Classifier()
-    class_indexes = []
-    similarities = []
+    processed_dataframe = dataframe.copy()
 
-    for index, row in dataframe.iterrows():
+    processed_dataframe['class_index1'] = []
+    processed_dataframe['class_index2'] = []
+    processed_dataframe['euclidean_similarity'] = []
+    processed_dataframe['cosine_similarity'] = []
+
+    for _, row in dataframe.iterrows():
         indexes = []
         embeddings = []
+
         for url in ["image_url1", "image_url2"]:
-            image_url = row[url]
-            image_path = FILENAME_PATTERN.search(image_url).group(1)
-            image_path = os.path.join("..", "..", "data", "images", image_path)
+            image_path = get_image_path_from_url(row[url])
             image = Image.open(image_path)
 
             logits = classifier(image).detach().numpy()
@@ -52,23 +119,30 @@ def process_dataframe(dataframe: pd.DataFrame):
         euclidean_similarity = euclidean_distance(embeddings[0], embeddings[1])
         cosine_similarity = cosine_distance(embeddings[0], embeddings[1])
 
-        class_indexes.append(indexes)
-        similarities.append([euclidean_similarity, cosine_similarity])
-
-    processed_dataframe = dataframe.copy()
-    processed_dataframe.loc[:, "class_index1"] = [i[0] for i in class_indexes]
-    processed_dataframe.loc[:, "class_index2"] = [i[1] for i in class_indexes]
-    processed_dataframe.loc[:, "euclidean_similarity"] = [similarity[0] for similarity in similarities]
-    processed_dataframe.loc[:, "cosine_similarity"] = [similarity[1] for similarity in similarities]
+        processed_dataframe['class_index1'].append(indexes[0])
+        processed_dataframe['class_index2'].append(indexes[1])
+        processed_dataframe['euclidean_similarity'].append(euclidean_similarity)
+        processed_dataframe['cosine_similarity'].append(cosine_similarity)
 
     return processed_dataframe
 
 
-def test():
+def main():
     df = pd.read_csv("../../data/train.csv")
-    df = process_dataframe(df.head(10))
-    print(df[["class_index1", "class_index1", "is_same", "euclidean_similarity", "cosine_similarity"]])
+    # df = add_features(df.head(10))
+    # print(df[["class_index1", "class_index1", "is_same", "euclidean_similarity", "cosine_similarity"]])
+    composition = a.Compose([
+        a.Rotate(limit=10, p=0.9),
+        a.ColorJitter(p=0.9, brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2),
+        a.Blur(p=0.8, blur_limit=10),
+        a.GaussNoise(p=0.9, var_limit=(10.0, 100.0), mean=0, per_channel=True),
+        a.ISONoise(p=0.9, color_shift=(0.01, 0.05), intensity=(0.1, 0.5)),
+        a.Downscale(p=0.9, scale_min=0.4, scale_max=0.4, interpolation=cv2.INTER_AREA),
+        a.ImageCompression(p=0.9, quality_lower=99, quality_upper=100),
+    ])
+    albumentations = AlbumentationTransform(composition)
+    df = fill_images(df, albumentations, "../../data/lmao")
 
 
 if __name__ == "__main__":
-    test()
+    main()

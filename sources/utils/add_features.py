@@ -4,7 +4,7 @@ import pandas as pd
 from PIL import Image
 from sources.utils.url_utils import get_image_path_from_url
 from sources.classifier import Classifier
-from sources.utils.sift import SIFT
+from sources.utils.sift import SIFT, SIFTPoint
 from sources.utils.distance import euclidean_distance, cosine_distance
 from sources.utils.benchmarking import measure_time
 
@@ -34,8 +34,8 @@ def add_features(dataframe: pd.DataFrame):
             class_indexes.append(classifier_score)
             embeddings.append(classifier_logits)
 
-            keypoint, descriptor = sift(image)
-            sift_points.append([keypoint, descriptor])
+            sift_point = sift(image)
+            sift_points.append(sift_point)
 
         if not embeddings:
             class_indexes = [None, None]
@@ -45,7 +45,7 @@ def add_features(dataframe: pd.DataFrame):
         else:
             euclidean_similarity = euclidean_distance(embeddings[0], embeddings[1])
             cosine_similarity = cosine_distance(embeddings[0], embeddings[1])
-            sift_score = sift.get_score(sift_points[0], sift_points[1])
+            sift_score = sift.get_score(sift_points[0], sift_points[1], approximate=False)
 
         processed_dataframe.loc[index, 'class_index1'] = class_indexes[0]
         processed_dataframe.loc[index, 'class_index2'] = class_indexes[1]

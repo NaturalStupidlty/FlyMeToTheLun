@@ -4,33 +4,46 @@ import numpy as np
 from PIL import Image
 
 
-def image_resize_test(image, max_dimension: int = 1024):
-    height, width, channel = image.shape
-    aspect_ratio = width / height
-
-    if aspect_ratio < 1:
-        new_size = (int(max_dimension * aspect_ratio), max_dimension)
-    else:
-        new_size = (max_dimension, int(max_dimension / aspect_ratio))
-
-    resized_image = cv2.resize(image, new_size)
-    return resized_image
+class SIFTPoint:
+    def __init__(self, keypoint, descriptor):
+        self.keypoint = keypoint
+        self.descriptor = descriptor
 
 
 class SIFT:
-    def __init__(self):
+    def __init__(self, image_resolution: int = 1920):
+        self.image_resolution = image_resolution
         self.sift = cv2.SIFT_create()
         self.matcher = cv2.BFMatcher()
 
     def __call__(self, image: Image):
         image = np.asarray(image)
+        image = self._resize_image(image)
         keypoint, descriptor = self.sift.detectAndCompute(image, None)
+        sift_point = SIFTPoint(keypoint, descriptor)
 
-        return keypoint, descriptor
+        return sift_point
 
-    def get_score(self, k1, k2):
-        matches = self._calculateMatches(k1[1], k2[1])
-        score = 100 * (len(matches) / min(len(k1[0]), len(k2[0])))
+    def _resize_image(self, image: np.ndarray):
+        height, width, channel = image.shape
+        aspect_ratio = width / height
+
+        if aspect_ratio < 1:
+            new_size = (int(self.image_resolution * aspect_ratio), self.image_resolution)
+        else:
+            new_size = (self.image_resolution, int(self.image_resolution / aspect_ratio))
+
+        resized_image = cv2.resize(image, new_size)
+
+        return resized_image
+
+    def get_score(self, point1, point2, approximate: bool = False):
+        if approximate:
+            matches = self._approximateMatches(point1.descriptor, point2.descriptor)
+        else:
+            matches = self._calculateMatches(point1.descriptor, point2.descriptor)
+
+        score = 100 * (len(matches) / min(len(point1.keypoint), len(point2.keypoint)))
 
         return score
 
@@ -60,3 +73,12 @@ class SIFT:
                     top_results.append(match1)
 
         return top_results
+
+    def _approximateMatches(self, descriptor1, descriptor2):
+        matches = self.matcher.knnMatch(descriptor1, descriptor2, k=2)
+        topResults = []
+        for m, n in matches:
+            if m.distance < 0.7 * n.distance:
+                topResults.append([m])
+
+        return topResults

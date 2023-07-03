@@ -1,80 +1,66 @@
 import os
-import cv2
 import pandas as pd
 import albumentations as a
 
 from PIL import Image
+from pathlib import Path
 from sources.utils.augmentation import Augmentation
-from sources.utils.albumentation_transform import AlbumentationTransform
-from sources.utils.url_utils import get_image_path_from_url, FILENAME_PATTERN
+from sources.utils.albumentation_transform import Albumentation
+from sources.utils.url_utils import create_filenames_csv
 
 
-def find_missing_images(dataframe: pd.DataFrame) -> pd.DataFrame:
-    missing_images = []
+def fill_missed_photos(dataframe: pd.DataFrame,
+                       augmentation: Augmentation,
+                       images_folder: str,
+                       save_folder: str = None) -> pd.DataFrame:
+    if save_folder is None:
+        save_folder = images_folder
+
+    dataframe = dataframe.copy()
+    images_folder = Path(images_folder)
+    save_folder = Path(save_folder)
+    folder_files = set(os.listdir(images_folder))
+    image_names = set(dataframe["image_url1"].tolist() + dataframe["image_url2"].tolist())
+    missed = list(image_names - folder_files)
+
+    dataframe["missed_image1"] = dataframe.apply(lambda r: 1 if r["image_url1"] in missed else 0, axis=1)
+    dataframe["missed_image2"] = dataframe.apply(lambda r: 1 if r["image_url2"] in missed else 0, axis=1)
 
     for index, row in dataframe.iterrows():
-        image_path1 = get_image_path_from_url(row["image_url1"])
-        image_path2 = get_image_path_from_url(row["image_url2"])
+        missed1 = dataframe.loc[index, "missed_image1"]
+        missed2 = dataframe.loc[index, "missed_image2"]
+        image_url1 = row["image_url1"]
+        image_url2 = row["image_url2"]
 
-        if not os.path.exists(image_path1) or not os.path.exists(image_path2):
-            missing_images.append(row)
+        if missed1 and not missed2:
+            new_path = save_folder / image_url1
+            old_path = images_folder / image_url2
+        elif not missed1 and missed2:
+            new_path = save_folder / image_url2
+            old_path = images_folder / image_url1
+        else:
+            continue
 
-    missing_images_dataframe = pd.DataFrame(missing_images)
-    return missing_images_dataframe
+        image = Image.open(old_path)
+        augmentation(image).save(new_path)
+        dataframe.loc[index, "is_same"] = 1
 
-
-def fill_images(dataframe: pd.DataFrame, augmentation: Augmentation, save_path: str) -> pd.DataFrame:
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-
-    missing_images_dataframe = find_missing_images(dataframe)
-
-    filled_dataframe = dataframe.copy()
-    filled_dataframe["missing"] = 0
-
-    for index, row in filled_dataframe.iterrows():
-        if index in missing_images_dataframe.index:
-            image_path1 = get_image_path_from_url(row["image_url1"])
-            image_path2 = get_image_path_from_url(row["image_url2"])
-
-            if not os.path.exists(image_path1):
-                if os.path.exists(image_path2):
-                    image1 = Image.open(image_path2)
-                    image1 = augmentation(image1)
-
-                    filename = FILENAME_PATTERN.search(row["image_url1"]).group(1)
-                    image1.save(os.path.join(save_path, filename))
-
-                    filled_dataframe.loc[index, "is_same"] = 1
-                else:
-                    filled_dataframe.loc[index, "missing"] = 1
-                    continue
-
-            if not os.path.exists(image_path2):
-                image2 = Image.open(image_path1)
-                image2 = augmentation(image2)
-
-                filename = FILENAME_PATTERN.search(row["image_url2"]).group(1)
-                image2.save(os.path.join(save_path, filename))
-
-                filled_dataframe.loc[index, "is_same"] = 1
-
-    return filled_dataframe
+    return dataframe
 
 
 def main():
-    df = pd.read_csv("../../data/train.csv")
     composition = a.Compose([
         a.Rotate(limit=10, p=0.9),
         a.Blur(p=0.8, blur_limit=10),
         a.GaussNoise(p=0.9, var_limit=(10.0, 100.0), mean=0, per_channel=True),
         a.ISONoise(p=0.9, color_shift=(0.01, 0.05), intensity=(0.1, 0.5)),
-        a.Downscale(p=0.9, scale_min=0.1, scale_max=0.2, interpolation=cv2.INTER_AREA),
         a.ImageCompression(p=0.9, quality_lower=99, quality_upper=100),
     ])
-    albumentations = AlbumentationTransform(composition)
-    df = fill_images(df, albumentations, "../../data/lmao")
-    print(df)
+
+    albumentations = Albumentation(composition)
+    test = pd.read_csv("../../data/test.csv")
+    test = create_filenames_csv(test)
+    test = fill_missed_photos(test, albumentations, "../../data/images", "../../data/huina")
 
 
 if __name__ == "__main__":

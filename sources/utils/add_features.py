@@ -1,28 +1,11 @@
 import os
-import numpy as np
 import pandas as pd
 
 from PIL import Image
 from sources.utils.url_utils import get_image_path_from_url
 from sources.classifier import Classifier
+from sources.utils.distance import euclidean_distance, cosine_distance
 from sources.utils.benchmarking import measure_time
-
-
-def euclidean_distance(embedding1: np.ndarray, embedding2: np.ndarray):
-    squared_difference = np.square(embedding1 - embedding2)
-    sum_squared_difference = np.sum(squared_difference)
-    distance = np.sqrt(sum_squared_difference)
-
-    return distance
-
-
-def cosine_distance(embedding1: np.ndarray, embedding2: np.ndarray):
-    dot_product = np.dot(embedding1, embedding2.T)
-    normalised_embedding1 = np.linalg.norm(embedding1)
-    normalised_embedding2 = np.linalg.norm(embedding2)
-    similarity = dot_product / (normalised_embedding1 * normalised_embedding2)
-
-    return similarity[0][0]
 
 
 @measure_time
@@ -64,7 +47,7 @@ def add_features(dataframe: pd.DataFrame):
 
 
 def main():
-    df = pd.read_csv("../../data/train.csv")
+    df = pd.read_csv("../../data/test.csv")
     df = df.head(10)
     df = add_features(df)
     print(df)

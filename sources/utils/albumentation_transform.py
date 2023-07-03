@@ -4,7 +4,7 @@ from PIL import Image
 from sources.utils.augmentation import Augmentation
 
 
-class AlbumentationTransform(Augmentation):
+class Albumentation(Augmentation):
     """
     Adapter (wrapper) for albumentations augmentations.
     """

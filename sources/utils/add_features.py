@@ -37,7 +37,7 @@ def add_features(dataframe: pd.DataFrame):
             sift_point = sift(image)
             sift_points.append(sift_point)
 
-        if not embeddings:
+        if len(embeddings) == 0:
             class_indexes = [None, None]
             euclidean_similarity = None
             cosine_similarity = None

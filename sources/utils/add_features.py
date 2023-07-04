@@ -4,7 +4,7 @@ import pandas as pd
 from PIL import Image
 from sources.utils.url_utils import get_image_path_from_url
 from sources.classifier import Classifier
-from sources.utils.sift import SIFT, SIFTPoint
+from sources.utils.sift import SIFT
 from sources.utils.distance import euclidean_distance, cosine_distance
 from sources.utils.benchmarking import measure_time
 

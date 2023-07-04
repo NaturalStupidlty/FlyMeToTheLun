@@ -23,8 +23,9 @@ def fill_missed_photos(dataframe: pd.DataFrame,
     image_names = set(dataframe["image_url1"].tolist() + dataframe["image_url2"].tolist())
     missed = list(image_names - folder_files)
 
-    dataframe["missed_image1"] = dataframe.apply(lambda r: 1 if r["image_url1"] in missed else 0, axis=1)
-    dataframe["missed_image2"] = dataframe.apply(lambda r: 1 if r["image_url2"] in missed else 0, axis=1)
+    dataframe["missed_image1"] = dataframe["image_url1"].isin(missed).astype(int)
+    dataframe["missed_image2"] = dataframe["image_url2"].isin(missed).astype(int)
+    dataframe["is_same"] = ((dataframe["image_url1"].isin(missed)) | (dataframe["image_url2"].isin(missed))).astype(int)
 
     for index, row in dataframe.iterrows():
         missed1 = dataframe.loc[index, "missed_image1"]
@@ -58,9 +59,9 @@ def main():
     ])
 
     albumentations = Albumentation(composition)
-    test = pd.read_csv("../../data/test.csv")
+    test = pd.read_csv("../../data/train.csv")
     test = create_filenames_csv(test)
-    test = fill_missed_photos(test, albumentations, "../../data/images", "../../data/huina")
+    test = fill_missed_photos(test, albumentations, "../../data/images", "../../data/images")
 
 
 if __name__ == "__main__":

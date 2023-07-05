@@ -7,9 +7,9 @@ from typing import List
 
 from PIL import Image
 
-from sources.utils.pdq.types.containers import HashAndQuality, HashesAndQuality
-from sources.utils.pdq.types.hash256 import Hash256
-from sources.utils.pdq.utils.matrix import MatrixUtil
+from sources.pdq.types.containers import HashAndQuality, HashesAndQuality
+from sources.pdq.types.hash256 import Hash256
+from sources.pdq.utils.matrix import MatrixUtil
 
 
 class PDQHasher:
@@ -673,8 +673,8 @@ class PDQHasher:
 
 if __name__ == "__main__":
     pdq = PDQHasher()
-    image1 = Image.open("/Users/tylerdurden/GitHub/FlyMeToTheLun/data/images/944643537.jpg")
-    image2 = Image.open("/Users/tylerdurden/GitHub/FlyMeToTheLun/data/images/937886123.jpg")
+    image1 = Image.open("/data/images/944643537.jpg")
+    image2 = Image.open("/data/images/937886123.jpg")
     hashnquality1 = pdq.fromBufferedImage(image1)
     hashnquality2 = pdq.fromBufferedImage(image2)
     hash1 = hashnquality1.getHash()

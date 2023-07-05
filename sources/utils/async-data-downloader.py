@@ -61,6 +61,6 @@ async def download_from_csv(csv_path, download_path):
 if __name__ == "__main__":
     while True:
         try:
-            asyncio.run(download_from_csv("../data/test.csv", "../data/images"))
+            asyncio.run(download_from_csv("../../data/test.csv", "../../data/images"))
         except (TimeoutError, ClientOSError):
             time.sleep(30)

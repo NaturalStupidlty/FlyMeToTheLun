@@ -3,7 +3,7 @@
 
 from random import randint
 
-from sources.utils.pdq.types.exceptions import PDQHashFormatException
+from sources.pdq.types.exceptions import PDQHashFormatException
 
 
 class Hash256:

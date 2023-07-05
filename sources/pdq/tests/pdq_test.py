@@ -2,8 +2,8 @@ import os
 
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from sources.utils.pdq.hasher.pdq_hasher import PDQHasher
-from sources.utils.pdq.types.hash256 import Hash256
+from sources.pdq.hasher.pdq_hasher import PDQHasher
+from sources.pdq.types.hash256 import Hash256
 import unittest
 
 SAMPLE_MEDIA = os.path.dirname(__file__) + "/../../../../data/"

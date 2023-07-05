@@ -2,65 +2,86 @@ import os
 import pandas as pd
 
 from PIL import Image
-from sources.utils.url_utils import get_image_path_from_url
+from sources.sift import SIFT
 from sources.classifier import Classifier
-from sources.utils.sift import SIFT
+from sources.utils.url_utils import get_image_path_from_url
 from sources.utils.distance import euclidean_distance, cosine_distance
 from sources.utils.benchmarking import measure_time
 
 
+TEXT_FILE_PATH = '../../data/results.txt'
+CSV_FILE_PATH = "../../data/results.csv"
+
+
 @measure_time
 def add_features(dataframe: pd.DataFrame):
-    classifier = Classifier()
     sift = SIFT()
+    classifier = Classifier()
     processed_dataframe = dataframe.copy()
 
-    for index, row in dataframe.iterrows():
-        class_indexes = []
-        embeddings = []
-        sift_points = []
+    start_index = 0
+    if os.path.exists(TEXT_FILE_PATH):
+        with open(TEXT_FILE_PATH, 'r') as file:
+            lines = file.readlines()
+            if lines:
+                last_line = lines[-1]
+                start_index = int(last_line.split(',')[0]) + 1
 
-        for url in ["image_url1", "image_url2"]:
-            image_path = get_image_path_from_url(row[url])
+    with open(TEXT_FILE_PATH, 'a') as file:
+        for index, row in dataframe.iterrows():
+            if index < start_index:
+                continue
 
-            if not os.path.exists(image_path):
-                embeddings.clear()
-                break
+            print(f"Processing entry number {index}...")
+            success = True
+            class_indexes = []
+            embeddings = []
+            sift_points = []
 
-            image = Image.open(image_path)
+            for url in ["image_url1", "image_url2"]:
+                image_path = get_image_path_from_url(row[url])
 
-            classifier_logits = classifier(image).detach().numpy()
-            classifier_score = classifier_logits.argmax(-1).item()
-            class_indexes.append(classifier_score)
-            embeddings.append(classifier_logits)
+                if not os.path.exists(image_path):
+                    success = False
+                    break
 
-            sift_point = sift(image)
-            sift_points.append(sift_point)
+                image = Image.open(image_path)
+                if 'A' in image.mode or image.mode in ('L', 'LA', 'P'):
+                    image = image.convert('RGB')
+                classifier_logits = classifier(image).detach().numpy()
+                classifier_score = classifier_logits.argmax(-1).item()
+                class_indexes.append(classifier_score)
+                embeddings.append(classifier_logits)
 
-        if len(embeddings) == 0:
-            class_indexes = [None, None]
-            euclidean_similarity = None
-            cosine_similarity = None
-            sift_score = None
-        else:
-            euclidean_similarity = euclidean_distance(embeddings[0], embeddings[1])
-            cosine_similarity = cosine_distance(embeddings[0], embeddings[1])
-            sift_score = sift.get_score(sift_points[0], sift_points[1], approximate=False)
+                sift_point = sift(image)
+                sift_points.append(sift_point)
 
-        processed_dataframe.loc[index, 'class_index1'] = class_indexes[0]
-        processed_dataframe.loc[index, 'class_index2'] = class_indexes[1]
-        processed_dataframe.loc[index, 'euclidean_similarity'] = euclidean_similarity
-        processed_dataframe.loc[index, 'cosine_similarity'] = cosine_similarity
-        processed_dataframe.loc[index, 'sift_score'] = sift_score
+            if success:
+                euclidean_similarity = euclidean_distance(embeddings[0], embeddings[1])
+                cosine_similarity = cosine_distance(embeddings[0], embeddings[1])
+                sift_score = sift.get_score(sift_points[0], sift_points[1], approximate=False)
+            else:
+                class_indexes = [None, None]
+                euclidean_similarity = None
+                cosine_similarity = None
+                sift_score = None
 
+            processed_dataframe.loc[index, 'class_index1'] = class_indexes[0]
+            processed_dataframe.loc[index, 'class_index2'] = class_indexes[1]
+            processed_dataframe.loc[index, 'euclidean_similarity'] = euclidean_similarity
+            processed_dataframe.loc[index, 'cosine_similarity'] = cosine_similarity
+            processed_dataframe.loc[index, 'sift_score'] = sift_score
+
+            file.write(f"{index},{class_indexes[0]},{class_indexes[1]},{euclidean_similarity},{cosine_similarity},{sift_score}\n")
+
+    processed_dataframe.to_csv(CSV_FILE_PATH, index=False)
     return processed_dataframe
 
 
 def main():
     df = pd.read_csv("../../data/test.csv")
-    df = df.head(10)
     df = add_features(df)
-    print(df)
+    df.to_csv(CSV_FILE_PATH)
 
 
 if __name__ == "__main__":

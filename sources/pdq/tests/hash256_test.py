@@ -1,7 +1,7 @@
 # pyre-strict
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-from sources.utils.pdq.types.exceptions import PDQHashFormatException
-from sources.utils.pdq.types.hash256 import Hash256
+from sources.pdq.types.exceptions import PDQHashFormatException
+from sources.pdq.types.hash256 import Hash256
 import unittest
 
 

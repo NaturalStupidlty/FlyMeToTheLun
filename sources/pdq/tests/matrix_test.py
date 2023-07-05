@@ -1,6 +1,6 @@
 # pyre-strict
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-from sources.utils.pdq.utils.matrix import MatrixUtil
+from sources.pdq.utils.matrix import MatrixUtil
 import unittest
 
 

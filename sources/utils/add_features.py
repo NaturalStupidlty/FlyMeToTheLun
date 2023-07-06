@@ -59,9 +59,6 @@ def add_features(dataframe: pd.DataFrame):
                 sift_point = sift(image)
                 sift_points.append(sift_point)
 
-                sift_point = sift(image)
-                sift_points.append(sift_point)
-
             if success:
                 euclidean_similarity = euclidean_distance(embeddings[0], embeddings[1])
                 cosine_similarity = cosine_distance(embeddings[0], embeddings[1])

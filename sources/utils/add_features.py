@@ -34,7 +34,7 @@ def add_features(dataframe: pd.DataFrame):
 
             print(f"Processing entry number {index}...")
             success = True
-            class_indexes = []
+            сlass_indexes = []
             embeddings = []
             sift_points = []
 
@@ -48,10 +48,16 @@ def add_features(dataframe: pd.DataFrame):
                 image = Image.open(image_path)
                 if 'A' in image.mode or image.mode in ('L', 'LA', 'P'):
                     image = image.convert('RGB')
-                classifier_logits = classifier(image).detach().numpy()
+
+                classifier_logits = classifier(image)
+                if classifier.device != 'cpu':
+                    classifier_logits = classifier_logits.cpu()
+                classifier_logits = classifier_logits.detach().numpy()
                 classifier_score = classifier_logits.argmax(-1).item()
-                class_indexes.append(classifier_score)
+                сlass_indexes.append(classifier_score)
                 embeddings.append(classifier_logits)
+                sift_point = sift(image)
+                sift_points.append(sift_point)
 
                 sift_point = sift(image)
                 sift_points.append(sift_point)
@@ -66,13 +72,13 @@ def add_features(dataframe: pd.DataFrame):
                 cosine_similarity = None
                 sift_score = None
 
-            processed_dataframe.loc[index, 'class_index1'] = class_indexes[0]
+            processed_dataframe.loc[index, 'class_index1'] = сlass_indexes[0]
             processed_dataframe.loc[index, 'class_index2'] = class_indexes[1]
             processed_dataframe.loc[index, 'euclidean_similarity'] = euclidean_similarity
             processed_dataframe.loc[index, 'cosine_similarity'] = cosine_similarity
             processed_dataframe.loc[index, 'sift_score'] = sift_score
 
-            file.write(f"{index},{class_indexes[0]},{class_indexes[1]},{euclidean_similarity},{cosine_similarity},{sift_score}\n")
+            file.write(f"{index},{сlass_indexes[0]},{сlass_indexes[1]},{euclidean_similarity},{cosine_similarity},{sift_score}\n")
 
     processed_dataframe.to_csv(CSV_FILE_PATH, index=False)
     return processed_dataframe

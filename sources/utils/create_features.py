@@ -93,7 +93,7 @@ def dataframe_from_txt():
         values = line.strip().split(',')
         data.append(values)
 
-    headers = ['ID', 'Class Index 1', 'Class Index 2', 'Euclidean Similarity', 'Cosine Similarity', 'is_same']
+    headers = ['ID', 'class_index1', 'class_index2', 'euclidean_similarity', 'cosine_similarity', 'is_same']
     # headers = ['ID', 'class_index1', 'class_index2', 'euclidean_similarity', 'cosine_similarity']
 
     df = pd.DataFrame(data, columns=headers)
@@ -108,6 +108,7 @@ def main():
 
 
 if __name__ == "__main__":
-    TEXT_FILE_PATH = '../../data/results_train.txt'
-    CSV_FILE_PATH = "../../data/results_train.csv"
+    TEXT_FILE_PATH = '../../data/train_features.txt'
+    CSV_FILE_PATH = "../../data/train_features.csv"
     main()
+    # dataframe_from_txt()

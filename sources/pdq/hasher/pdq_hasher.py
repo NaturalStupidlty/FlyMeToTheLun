@@ -673,8 +673,8 @@ class PDQHasher:
 
 if __name__ == "__main__":
     pdq = PDQHasher()
-    image1 = Image.open("/data/images/944643537.jpg")
-    image2 = Image.open("/data/images/937886123.jpg")
+    image1 = Image.open("../../../data/images/944643537.jpg")
+    image2 = Image.open("../../../data/images/937886123.jpg")
     hashnquality1 = pdq.fromBufferedImage(image1)
     hashnquality2 = pdq.fromBufferedImage(image2)
     hash1 = hashnquality1.getHash()

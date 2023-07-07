@@ -18,4 +18,8 @@ class TransformerClassifier:
             outputs = self.model(**inputs)
         logits = outputs.logits
 
+        if self.device != 'cpu':
+            logits = logits.cpu()
+        logits = logits.detach().numpy()
+
         return logits

@@ -3,7 +3,7 @@ from PIL import Image
 from transformers import ViTImageProcessor, ViTForImageClassification
 
 
-class Classifier:
+class TransformerClassifier:
     def __init__(self, model_name: str = 'google/vit-large-patch32-384') -> None:
         self.processor = ViTImageProcessor.from_pretrained(model_name)
         self.model = ViTForImageClassification.from_pretrained(model_name)
@@ -16,6 +16,6 @@ class Classifier:
         inputs = inputs.to(self.device)
         with torch.no_grad():
             outputs = self.model(**inputs)
-        scores = outputs.logits
+        logits = outputs.logits
 
-        return scores
+        return logits

@@ -8,7 +8,7 @@ class TransformerClassifier:
         self.processor = ViTImageProcessor.from_pretrained(model_name)
         self.model = ViTForImageClassification.from_pretrained(model_name)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Model at device: {self.device}")
+        print(f"{model_name} model at device: {self.device}")
         self.model = self.model.to(self.device)
 
     def __call__(self, image: Image):

@@ -10,12 +10,13 @@ def create_submission(dataframe: pd.DataFrame) -> pd.DataFrame:
 
     dataframe = dataframe.copy()
     X = dataframe.drop(["ID"], axis=1).values
-    y = predict(X)
+    y1, y2 = predict(X)
 
-    dataframe["is_same"] = y
+    dataframe["is_same"] = y1
+    dataframe["different"] = y2
     dataframe["ID"] = [i for i in range(2, 22662)]
 
-    submission = dataframe[["ID", "is_same"]]
+    submission = dataframe[["ID", "is_same", "different"]]
 
     return submission
 

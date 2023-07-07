@@ -1,11 +1,12 @@
 import torch
+import numpy as np
 
 from PIL import Image
 from segment_anything import sam_model_registry, SamPredictor
 
 
 class SAM:
-    def __init__(self, checkpoint_path: str = "sam_vit_h_4b8939.pth", model_type: str = "vit_h"):
+    def __init__(self, checkpoint_path: str = "../sam_vit_h_4b8939.pth", model_type: str = "vit_h"):
         self.model_type = model_type
         self.checkpoint_path = checkpoint_path
         self.model = sam_model_registry[self.model_type](checkpoint=self.checkpoint_path)
@@ -15,7 +16,7 @@ class SAM:
         self.predictor = SamPredictor(self.model)
 
     def __call__(self, image: Image):
-        self.predictor.set_image(image)
+        self.predictor.set_image(np.array(image))
 
         masks, scores, logits = self.predictor.predict_torch(
             multimask_output=False,
@@ -25,13 +26,6 @@ class SAM:
 
         if self.device != 'cpu':
             logits = logits.cpu()
-        logits = logits.detach().numpy()
+        logits = logits[0][0].detach().numpy()
 
         return logits
-
-
-def main():
-
-
-if __name__ == "__main__":
-    main()

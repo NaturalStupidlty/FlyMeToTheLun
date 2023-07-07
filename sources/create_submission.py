@@ -1,6 +1,6 @@
 import pandas as pd
 from sources.utils.url_utils import create_filenames_csv
-from sources.utils.add_features import add_features
+from sources.utils.create_features import add_features
 from sources.predict import predict
 
 

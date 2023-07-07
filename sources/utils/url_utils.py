@@ -9,9 +9,10 @@ URL_PATTERN = "https://storage.googleapis.com/lun-ua/images/{}".format
 
 def get_image_path_from_url(url: str):
     filename = FILENAME_PATTERN.search(url).group(1)
-    image_path = os.path.join("..", "..", "data", "images", filename)
+    train_path = os.path.join("..", "..", "data", "train", filename)
+    test_path = os.path.join("..", "..", "data", "test", filename)
 
-    return image_path
+    return train_path if os.path.exists(train_path) else test_path
 
 
 def create_filenames_csv(dataframe: pd.DataFrame) -> pd.DataFrame:

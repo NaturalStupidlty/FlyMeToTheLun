@@ -45,7 +45,7 @@ class SIFT:
 
         score = 100 * (len(matches) / min(len(point1.keypoint), len(point2.keypoint)))
 
-        return score
+        return score, matches
 
     def _calculateMatches(self, descriptor1, descriptor2):
         matches = self.matcher.knnMatch(descriptor1, descriptor2, k=2)
@@ -82,3 +82,19 @@ class SIFT:
                 topResults.append([m])
 
         return topResults
+
+    @staticmethod
+    def getPlot(image1, image2, keypoint1, keypoint2, matches):
+        image1 = cv2.cvtColor(image1, cv2.COLOR_BGR2RGB)
+        image2 = cv2.cvtColor(image2, cv2.COLOR_BGR2RGB)
+        matchPlot = cv2.drawMatchesKnn(
+            image1,
+            keypoint1,
+            image2,
+            keypoint2,
+            matches,
+            None,
+            [255, 255, 255],
+            flags=2
+        )
+        return matchPlot

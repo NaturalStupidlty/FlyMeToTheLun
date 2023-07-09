@@ -1,4 +1,5 @@
 import time
+import pickle
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,6 +16,7 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
+from catboost import CatBoostClassifier
 from sklearn.naive_bayes import GaussianNB
 
 
@@ -54,8 +56,10 @@ def show_info(train_df: pd.DataFrame, test_df: pd.DataFrame):
 def prepare_data(train_df: pd.DataFrame, test_df: pd.DataFrame, split: bool = True, random_state: int = 69):
     labels = train_df['is_same']
     features = train_df[['class_index1', 'class_index2', 'euclidean_similarity', 'cosine_similarity']]
+    #features = train_df[["class_index1_vit" ,"class_index2_vit", "euclidean_similarity_vit", "cosine_similarity_vit" , "class_index1_conv","class_index2_conv", "euclidean_similarity_conv", "cosine_similarity_conv"]]
 
     features_test = test_df[['class_index1', 'class_index2', 'euclidean_similarity', 'cosine_similarity']]
+    #features_test = test_df[["class_index1_vit" ,"class_index2_vit", "euclidean_similarity_vit", "cosine_similarity_vit" , "class_index1_conv","class_index2_conv", "euclidean_similarity_conv", "cosine_similarity_conv"]]
 
     # Scale numerical data to have mean=0 and variance=1
     numerical_transformer = Pipeline(steps=[('scaler', StandardScaler())])
@@ -80,7 +84,9 @@ def prepare_grid_search(random_state: int = 69):
         "RandomForest": RandomForestClassifier(random_state=random_state),
         "XGBoost": XGBClassifier(random_state=random_state, eval_metric='logloss'),
         "LGBM": LGBMClassifier(random_state=random_state),
+        "CatBoost": CatBoostClassifier(random_state=0, verbose=False),
         "NaiveBayes": GaussianNB()
+
     }
 
     LR_grid = {'C': [0.25, 0.5, 0.75, 1, 1.25, 1.5],
@@ -140,7 +146,7 @@ def find_best_classifiers(X_train, X_valid, y_train, y_valid, verbose=True):
         i += 1
 
     if verbose:
-        print('Validation score: ', valid_scores)
+        print(valid_scores)
         print('Best parameters: ', clf_best_params)
 
     return clf_best_params
@@ -183,25 +189,30 @@ def predict(classifiers, data):
 
 
 def main():
-    train = pd.read_csv('../data/train_features.csv')
-    test = pd.read_csv('../data/test_features.csv')
-
-    show_info(train, test)
+    train = pd.read_csv('../data/train_features(vit).csv')
+    test = pd.read_csv('../data/test_features(vit).csv')
+    #show_info(train, test)
 
     X_train, X_valid, y_train, y_valid, X_test = prepare_data(train, test)
 
     clf_best_params = find_best_classifiers(X_train, X_valid, y_train, y_valid, verbose=True)
 
     best_classifiers = {
-        "LogisticRegression": LogisticRegression(**clf_best_params["LogisticRegression"], random_state=0),
-        "SVC": SVC(**clf_best_params["SVC"], random_state=0, probability=True),
         "RandomForest": RandomForestClassifier(random_state=0),
         "XGBoost": XGBClassifier(**clf_best_params["XGBoost"], random_state=0),
         "LGBM": LGBMClassifier(**clf_best_params["XGBoost"], random_state=0),
-        "NaiveBayes": GaussianNB(**clf_best_params["NaiveBayes"])
+        "CatBoost": CatBoostClassifier(**clf_best_params["CatBoost"], verbose=False, random_state=0),
+        "LogisticRegression": LogisticRegression(**clf_best_params["LogisticRegression"], random_state=0),
     }
 
     best_classifiers = train_classifiers(best_classifiers, train, test)
+
+    with open('../assets/classifiers.pickle', 'wb') as file:
+        pickle.dump(best_classifiers, file)
+
+    # with open('../assets/classifiers.pickle', 'rb') as file:
+    #     best_classifiers = pickle.load(file)
+    # best_classifiers = train_classifiers(best_classifiers, train, test)
 
     valid_predictions = predict(best_classifiers, X_valid) > 0.5
 
@@ -212,27 +223,39 @@ def main():
     plt.title("Confusion Matrix")
     plt.xlabel("Predicted Labels")
     plt.ylabel("True Labels")
-    plt.show()
+    #plt.show()
+    plt.savefig("../assets/confusion_matrix.png")
 
-    report = classification_report(y_valid, valid_predictions)
-    print(report)
+    report = classification_report(y_valid, valid_predictions, digits=5)
+    #print(report)
+
+    with open('../assets/classification_report.txt', 'w') as file:
+        file.write(report)
 
     dataframe = test.copy()
     X = dataframe.drop(["ID"], axis=1).values
+
+
+    start = time.time()
     y1 = predict(best_classifiers, X_test)
+    finish = time.time()
+    print(f"Execution time: {finish - start} seconds")
+
     y2 = (y1 + 1) % 2
 
     dataframe["is_same"] = y1
     dataframe["different"] = y2
-    dataframe["ID"] = [i for i in range(2, 22662)]
+    dataframe["ID"] = [i for i in range(len(test))]
 
-    submission = dataframe[["ID", "is_same", "different"]]
+    result = dataframe[["ID", "is_same", "different"]]
 
-    submission['is_same'] = submission['is_same'].apply(lambda x: 1 if x > 0.5 else 0)
+    result['is_same'] = result['is_same'].apply(lambda x: 1 if x > 0.33 else 0)
 
-    submission['different'] = (submission['is_same'] + 1) % 2
+    result['different'] = (result['is_same'] + 1) % 2
 
-    submission.to_csv("../data/submission2.csv", index=False)
+    result['ID'] = [i for i in range(2, len(test)+2)]
+
+    result.to_csv("../data/submission(vit).csv", index=False)
 
 
 if __name__ == "__main__":

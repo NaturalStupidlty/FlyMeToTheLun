@@ -7,6 +7,7 @@ from typing import List
 
 from PIL import Image
 
+from sources.utils.benchmarking import measure_time
 from sources.pdq.types.containers import HashAndQuality, HashesAndQuality
 from sources.pdq.types.hash256 import Hash256
 from sources.pdq.utils.matrix import MatrixUtil
@@ -671,13 +672,18 @@ class PDQHasher:
             j += 1
 
 
-if __name__ == "__main__":
+@measure_time
+def main():
     pdq = PDQHasher()
-    image1 = Image.open("../../../data/images/944643537.jpg")
-    image2 = Image.open("../../../data/images/937886123.jpg")
+    image1 = Image.open("../../data/train/944643537.jpg")
+    image2 = Image.open("../../data/train/937886123.jpg")
     hashnquality1 = pdq.fromBufferedImage(image1)
     hashnquality2 = pdq.fromBufferedImage(image2)
     hash1 = hashnquality1.getHash()
     hash2 = hashnquality2.getHash()
     hamming_distance = hash1.hammingDistance(hash2)
     print(hamming_distance)
+
+
+if __name__ == "__main__":
+    main()

@@ -2,7 +2,7 @@ import os
 
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 
-from sources.pdq.hasher.pdq_hasher import PDQHasher
+from sources.pdq.pdq import PDQHasher
 from sources.pdq.types.hash256 import Hash256
 import unittest
 

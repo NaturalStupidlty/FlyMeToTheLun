@@ -8,7 +8,7 @@ import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../utils"))
 
-from sources.pdq.hasher.pdq_hasher import PDQHasher
+from sources.pdq.pdq import PDQHasher
 from sources.pdq.types.hash256 import Hash256
 
 
